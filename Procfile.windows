@@ -1,0 +1,1 @@
+web: target/universal/stage/bin/dj-station -Dhttp.port=%PORT%
