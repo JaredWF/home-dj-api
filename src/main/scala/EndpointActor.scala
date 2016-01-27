@@ -25,6 +25,8 @@ class EndpointActor() extends HttpService with Actor  {
 
   def loginRoute = path("login") {
     get { 
+      println("client_id: " + System.getenv("client_id"))
+      println("login url: \n" + "https://accounts.spotify.com/authorize?client_id=" + System.getenv("client_id") + "&response_type=code&redirect_uri=http://home-dj.herokuapp.com/finishAuthorize&scope=playlist-modify-public")
       redirect("https://accounts.spotify.com/authorize?client_id=" + System.getenv("client_id") + "&response_type=code&redirect_uri=http://home-dj.herokuapp.com/finishAuthorize&scope=playlist-modify-public", StatusCodes.PermanentRedirect)
     }
   }
