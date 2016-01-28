@@ -57,17 +57,19 @@ class EndpointActor() extends HttpService with Actor  {
 
   def addSong = path("add") {
     post {
-      entity(as[Song]) { song =>
-        if (accessToken == "" || userID == "" || playlistID == "") {
-          complete("Please login")
-        } else {
-          val response = Unirest.post("https://api.spotify.com/v1/users/" + userID + "/playlists/" + playlistID + "/tracks?uris=" + song.id)
-            .header("Authorization", "Bearer " + accessToken)
-            .header("Content-Type", "application/json")
-            .asString().getBody()//.asJson().getBody().getObject.getString("snapshot_id")
+      respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) {
+        entity(as[Song]) { song =>
+          if (accessToken == "" || userID == "" || playlistID == "") {
+            complete("Please login")
+          } else {
+            val response = Unirest.post("https://api.spotify.com/v1/users/" + userID + "/playlists/" + playlistID + "/tracks?uris=" + song.id)
+              .header("Authorization", "Bearer " + accessToken)
+              .header("Content-Type", "application/json")
+              .asString().getBody()//.asJson().getBody().getObject.getString("snapshot_id")
 
-          println(response)
-          complete(song.id.toString)
+            println(response)
+            complete(song.id.toString)
+          }
         }
       }
     }
