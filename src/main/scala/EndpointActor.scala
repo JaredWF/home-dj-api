@@ -4,6 +4,7 @@ import akka.actor._
 import spray.routing.HttpService
 import spray.http.HttpHeaders._
 import spray.http.ContentTypes._
+import spray.http.AllOrigins
 import spray.http.StatusCodes
 import com.mashape.unirest.http._
 import spray.httpx.SprayJsonSupport._
@@ -57,7 +58,7 @@ class EndpointActor() extends HttpService with Actor  {
 
   def addSong = path("add") {
     post {
-      respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) {
+      respondWithHeader(`Access-Control-Allow-Origin`(AllOrigins)) {
         entity(as[Song]) { song =>
           if (accessToken == "" || userID == "" || playlistID == "") {
             complete("Please login")
