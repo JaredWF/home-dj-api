@@ -61,7 +61,7 @@ class EndpointActor() extends HttpService with Actor  {
       respondWithHeader(`Access-Control-Allow-Origin`(AllOrigins)) {
         entity(as[Song]) { song =>
           if (accessToken == "" || userID == "" || playlistID == "") {
-            complete("Please login")
+            complete("accessToken: " + accessToken + "\nuserID: " + userID + "\nplaylistID: " + playlistID)
           } else {
             val response = Unirest.post("https://api.spotify.com/v1/users/" + userID + "/playlists/" + playlistID + "/tracks?uris=" + song.id)
               .header("Authorization", "Bearer " + accessToken)
