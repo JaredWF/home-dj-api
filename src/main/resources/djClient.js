@@ -49,9 +49,9 @@ window.onload = function () {
                   success: function(response){  
                     alert("successful post");
                   },
-                  error: function(e){  
-                    //alert("post failed");
-                    alert("failure: \n" + e);  
+                  error: function(xhr, status, error){  
+                    var err = eval("(" + xhr.responseText + ")");
+                    alert(err.Message);
                   }
                 });
               });
