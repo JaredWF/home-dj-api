@@ -40,7 +40,6 @@ window.onload = function () {
                 $.ajax({  
                   type: "POST",  
                   url: "http://home-dj.herokuapp.com/add",  
-                  dataType: 'jsonp',
                   data: JSON.stringify(
                       {id: uri}
                   ),
