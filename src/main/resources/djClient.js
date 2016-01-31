@@ -50,8 +50,8 @@ window.onload = function () {
                     alert("successful post");
                   },
                   error: function(e){  
-                    alert("post failed");
-                    //alert("failure: \n" + e);  
+                    //alert("post failed");
+                    alert("failure: \n" + e);  
                   }
                 });
               });
