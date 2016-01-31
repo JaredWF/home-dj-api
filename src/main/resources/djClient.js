@@ -43,7 +43,7 @@ window.onload = function () {
                   data: JSON.stringify(
                       {id: uri}
                   ),
-                  contentType: "application/json",
+                  contentType: "text/plain",
                   dataType   : "text/plain",
                   success: function(response){  
                     alert("successful post");
