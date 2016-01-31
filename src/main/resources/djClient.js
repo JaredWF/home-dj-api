@@ -44,7 +44,7 @@ window.onload = function () {
                       {id: uri}
                   ),
                   contentType: "application/json",
-                  dataType   : "text/plain",
+                  dataType   : "text",
                   success: function(response){  
                     alert("successful post");
                   },
