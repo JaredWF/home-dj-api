@@ -18,7 +18,7 @@ class EndpointActor() extends HttpService with Actor  {
   var userID = ""
   var playlistID = ""
 
-  def receive = runRoute(pingRoute ~ loginRoute ~ finishAuthorize ~ addSong)
+  def receive = runRoute(pingRoute ~ loginRoute ~ finishAuthorize ~ addSong ~ searchPage)
 
   def pingRoute = path("ping") {
     get { complete("pong!") }
@@ -75,4 +75,12 @@ class EndpointActor() extends HttpService with Actor  {
       }
     }
   }
+
+  def searchPage = 
+    get {
+      compressResponse()(getFromResourceDirectory("")) ~
+      path("") {
+        getFromResource("index.html")
+      }
+    }
 }
