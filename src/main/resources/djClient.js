@@ -50,8 +50,8 @@ window.onload = function () {
                     alert("successful post");
                   },
                   error: function(xhr, status, error){  
-                    var err = eval("(" + xhr.responseText + ")");
-                    alert(err.Message);
+                    alert(status);
+                    alert(xhr.responseText);
                   }
                 });
               });
