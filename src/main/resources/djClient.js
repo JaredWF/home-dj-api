@@ -43,7 +43,7 @@ window.onload = function () {
                   data: JSON.stringify(
                       {id: uri}
                   ),
-                  contentType: "text/plain",
+                  contentType: "application/json",
                   dataType   : "text/plain",
                   success: function(response){  
                     alert("successful post");
@@ -51,6 +51,7 @@ window.onload = function () {
                   error: function(xhr, status, error){  
                     alert(status);
                     alert(xhr.responseText);
+                    alert(error);
                   }
                 });
               });
