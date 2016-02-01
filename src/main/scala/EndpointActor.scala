@@ -4,6 +4,7 @@ import akka.actor._
 import spray.routing.HttpService
 import spray.http.HttpHeaders._
 import spray.http.ContentTypes._
+import spray.http.AllOrigins
 import spray.http.StatusCodes
 import com.mashape.unirest.http._
 import spray.httpx.SprayJsonSupport._
@@ -17,7 +18,7 @@ class EndpointActor() extends HttpService with Actor  {
   var userID = ""
   var playlistID = ""
 
-  def receive = runRoute(pingRoute ~ loginRoute ~ finishAuthorize ~ addSong)
+  def receive = runRoute(pingRoute ~ loginRoute ~ finishAuthorize ~ addSong ~ searchPage)
 
   def pingRoute = path("ping") {
     get { complete("pong!") }
@@ -57,10 +58,10 @@ class EndpointActor() extends HttpService with Actor  {
 
   def addSong = path("add") {
     post {
-      respondWithHeader(RawHeader("Access-Control-Allow-Origin", "*")) {
+      respondWithHeader(`Access-Control-Allow-Origin`(AllOrigins)) {
         entity(as[Song]) { song =>
           if (accessToken == "" || userID == "" || playlistID == "") {
-            complete("Please login")
+            complete("accessToken: " + accessToken + "\nuserID: " + userID + "\nplaylistID: " + playlistID)
           } else {
             val response = Unirest.post("https://api.spotify.com/v1/users/" + userID + "/playlists/" + playlistID + "/tracks?uris=" + song.id)
               .header("Authorization", "Bearer " + accessToken)
@@ -74,4 +75,12 @@ class EndpointActor() extends HttpService with Actor  {
       }
     }
   }
+
+  def searchPage = 
+    get {
+      compressResponse()(getFromResourceDirectory("")) ~
+      path("") {
+        getFromResource("index.html")
+      }
+    }
 }
