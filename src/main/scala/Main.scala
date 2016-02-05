@@ -12,7 +12,7 @@ object Main {
   def main(args: Array[String]) {
     implicit val system = ActorSystem("on-spray-can")
     
-    val service = system.actorOf(Props[EndpointActor], name = "RESTEndpoint")
+    val service = system.actorOf(Props[EndpointActorImpl], name = "RESTEndpoint")
     
     val p = Properties.envOrElse("PORT", "8080").toInt
     IO(Http) ! Http.Bind(service, interface = "0.0.0.0", port = p)
