@@ -12,9 +12,7 @@ import spray.http.MediaTypes
 import scala.util.Success
 import scala.util.Failure
 
-class EndpointActor() extends HttpService with Actor with SpotifyInterfaceImpl  {
-	import context.dispatcher
-  def actorRefFactory = context
+trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
 
   val loginRedirect = "https://accounts.spotify.com/authorize?client_id=" + System.getenv("client_id") + "&response_type=code&redirect_uri=" + System.getenv("redirect_uri") + "&scope=playlist-modify-public"
 
@@ -22,7 +20,7 @@ class EndpointActor() extends HttpService with Actor with SpotifyInterfaceImpl  
   var userID = ""
   var playlistID = ""
 
-  def receive = runRoute(pingRoute ~ loginRoute ~ finishAuthorize ~ addSongRoute ~ searchPage)
+  lazy val route = pingRoute ~ loginRoute ~ finishAuthorize ~ addSongRoute ~ searchPage
 
   def pingRoute = path("ping") {
     get { 
