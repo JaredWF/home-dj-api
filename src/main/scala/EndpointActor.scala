@@ -22,9 +22,9 @@ trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
 
   lazy val route = pingRoute ~ loginRoute ~ finishAuthorize ~ addSongRoute ~ searchPage
 
-  def pingRoute = path("ping") {
+  def pingRoute = path("ping" / Segment) { (s) =>
     get { 
-      complete("pong!") 
+      complete("pong! " + s) 
     }
   }
 
