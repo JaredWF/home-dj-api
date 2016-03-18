@@ -1,33 +1,29 @@
 #search_bar {
-	width: calc(100% - 6px);
+	width: 100%;
+  height: 3.2em;
 	position: fixed;
   table-layout: auto;
-  background-color: #404040;
-  border-radius: 7px;
-  border: 3px solid white;
+  background-color: #B31B1B;
 }
 
 #search_text {
   height: 1em;
   width: 100%;
   font-size: 2em;
-  background-color: #404040;
+  background-color: #EF6464;
   border: 0px solid black;
   padding-bottom: 5px;
+  padding-left: 0.3em;
   color: white;
-  margin-bottom: -4px;
-  border-radius: 7px;
+  margin: 0.2em;
+  margin-bottom: 0.05em;
+  margin-right: 0em;
+  border-radius: 0.5em;
 }
 
 #search_button {
-  width: 4em;
-  background-color: #404040;
-  border-radius: 7px;
-  border: 3px solid white;
-  margin-top: -3px;
-  margin-right: -3px;
-  margin-bottom: -7px;
-  color: white;
+  margin: 0.3em;
+  height: 2.8em;
 }
 
 #parent {
@@ -48,17 +44,17 @@ input {
 }
 
 #results {
-  margin-top: 1.7em;
+  margin-top: 2em;
   border-collapse: collapse;
   width: 100%;
   table-layout: auto;
-  background-color: black;
+  background-color: #680000;
   color: white;
 }
 
 #results td {
  padding: .2em;
- border-bottom: 1px solid white;
+ border-bottom: 1px solid #B31B1B;
 }
 
 .song_text {
@@ -72,6 +68,7 @@ input {
 
 .artist_name {
   font-size: 1.2em;
+  color: #CCCCCC;
 }
 
 .add_button {
@@ -94,5 +91,5 @@ html, body{
   max-height: 100%;
 
   background-color: black;
-  font-family: "Verdana";
+  font-family: "Impact";
 }
