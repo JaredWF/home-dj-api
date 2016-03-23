@@ -11,6 +11,9 @@ import spray.httpx.SprayJsonSupport._
 import spray.http.MediaTypes
 import scala.util.Success
 import scala.util.Failure
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext
+import ExecutionContext.Implicits.global
 
 trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
 
@@ -40,34 +43,27 @@ trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
     parameters('code) { (code) =>
       get {
 
-        getAccessToken(code) match {
-          case Success(token) => 
-            accessToken = token
+        val response = getAccessToken(code).map { (token) =>
+          accessToken = token
 
-            getUserID(accessToken) match {
-              case Success(id) => 
-                userID = id
+          getUserID(token).map { (id) =>
+            userID = id
 
-                getPlaylistID(accessToken) match {
-                  case Success(playlist) => 
-                    playlistID = playlist
-                    println(s"logged in $userID")
-                    complete(s"Login successful\n\nuserID: $userID \ntoken: $accessToken \nplaylistID: $playlistID")
-                  case Failure(playlistEx) => 
-                    println(s"playlist retrieval failed for user $userID and code $code and token $accessToken")
-                    complete("Error getting first playlist: \n" + playlistEx)
-                }
-              case Failure(userEx) => 
-                println(s"userID retrieval failed for code $code and token $accessToken")
-                complete("Error getting user id: \n" + userEx)
+            getAllPlaylists(token, id).map { (playlists) =>
+              s"AccessToken: $accessToken\nUserID: $userID\n\n" + stringFormatPlaylists(playlists, "")
             }
-          case Failure(tokenEx) => 
-            println(s"token retrieval failed for code $code\n" + tokenEx)
-            complete("Error getting token: \n" + tokenEx)
+          }
         }
 
+        complete(response)
       }
     }
+  }
+
+  def stringFormatPlaylists(playlists: List[Playlist], s: String): String = playlists match{
+    case head::Nil => s + head.name + "\t" + head.trackCount + "\t" + head.id + "\t" + head.imageURL + "\n"
+    case head::tail => stringFormatPlaylists(tail, s + head.name + "\t" + head.trackCount + "\t" + head.id + "\t" + head.imageURL + "\n")
+    case _ => ""
   }
 
   def addSongRoute = path("add") {
@@ -77,12 +73,13 @@ trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
           complete("Please login before adding songs")
         } else {
           val songID = song.id
-          addSong(accessToken, userID, playlistID, songID) match {
-            case Success(snapshotID) => complete(snapshotID)
-            case Failure(ex) => 
-              println(s"failed to add song $songID to playlist $playlistID for user $userID with token $accessToken")
-              complete("Failed to add song: \n" + ex)
-          }
+          complete( addSong(accessToken, userID, playlistID, songID) /*match {
+              case Future.successful(snapshotID) => snapshotID
+              case Future.failed(ex) => 
+                println(s"failed to add song $songID to playlist $playlistID for user $userID with token $accessToken")
+                "Failed to add song: \n" + ex
+            }*/
+          )
         }
       }
     }
