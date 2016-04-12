@@ -14,16 +14,15 @@ import scala.util.Failure
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
 import ExecutionContext.Implicits.global
+import collection.mutable.HashMap
 
 trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
 
   val loginRedirect = "https://accounts.spotify.com/authorize?client_id=" + System.getenv("client_id") + "&response_type=code&redirect_uri=" + System.getenv("redirect_uri") + "&scope=playlist-modify-public"
 
-  var accessToken = ""
-  var userID = ""
-  var playlistID = ""
+  val actorMap = new HashMap[String,ActorRef]()
 
-  lazy val route = pingRoute ~ loginRoute ~ finishAuthorize ~ addSongRoute ~ searchPage
+  lazy val route = pingRoute ~ loginRoute ~ finishAuthorize ~ searchPage ~ startAuthorize ~ getPlaylists
 
   def pingRoute = path("ping" / Segment) { (s) =>
     get { 
@@ -41,22 +40,42 @@ trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
 
   def finishAuthorize = path("finishAuthorize") {
     parameters('code) { (code) =>
-      get {
+      get { ctx =>
 
-        val response = getAccessToken(code).map { (token) =>
-          accessToken = token
+        println("Attepmting to authorize code " + code)
+
+        val response = getAccessToken(code).flatMap { (token) =>
+          println("found access token " + token)
 
           getUserID(token).map { (id) =>
-            userID = id
 
-            getAllPlaylists(token, id).map { (playlists) =>
-              s"AccessToken: $accessToken\nUserID: $userID\n\n" + stringFormatPlaylists(playlists, "")
-            }
+            println("found userID " + id)
+
+            val hash = Util.getBase36(6)
+
+            actorMap += hash -> actorRefFactory.actorOf(Props(new PlaylistActor(id, token)))
+
+            hash
           }
         }
 
-        complete(response)
+        response.foreach(println(_))
+
+        ctx.complete(response)
       }
+    }
+  }
+
+  def getPlaylists = path("getPlaylists" / Segment) { (actorHash) =>
+    get { ctx =>
+      actorMap(actorHash) ! GetAllPlaylists(ctx)
+    }
+  }
+
+  def startAuthorize = path("startAuthorize") {
+    get {
+      println("serving admin page")
+      getFromResource("choosePlaylist.html")
     }
   }
 
@@ -66,7 +85,7 @@ trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
     case _ => ""
   }
 
-  def addSongRoute = path("add") {
+  /*def addSongRoute = path("add") {
     post {
       entity(as[Song]) { song =>
         if (accessToken == "" || userID == "" || playlistID == "") {
@@ -83,7 +102,7 @@ trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
         }
       }
     }
-  }
+  }*/
 
   def searchPage = 
     get {

@@ -3,7 +3,6 @@ package org.eclectek.dj
 import scala.util.Try
 import scala.concurrent.Future
 
-case class Playlist(name: String, trackCount: Int, imageURL: String, id: String, owner: String)
 
 trait SpotifyInterface {
 	def getAccessToken(accessCode: String): Future[String]

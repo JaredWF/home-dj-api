@@ -61,7 +61,7 @@ trait SpotifyInterfaceImpl extends SpotifyInterface {
       val imageArray = jsonObject.getJSONArray("images")
       val newPlaylist = Playlist(jsonObject.getString("name"), 
         jsonObject.getJSONObject("tracks").getInt("total"), 
-        imageArray.getJSONObject(imageArray.length - 1).getString("url"), 
+        imageArray.getJSONObject(math.min(1, imageArray.length - 1)).getString("url"), 
         jsonObject.getString("id"),
         jsonObject.getJSONObject("owner").getString("id"))
       buildPlaylistList(jsonArray, position + 1, newPlaylist::playlistList)
