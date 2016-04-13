@@ -20,7 +20,8 @@ trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
 
   val loginRedirect = "https://accounts.spotify.com/authorize?client_id=" + System.getenv("client_id") + "&response_type=code&redirect_uri=" + System.getenv("redirect_uri") + "&scope=playlist-modify-public"
 
-  val actorMap = new HashMap[String,ActorRef]()
+  val actorMap = new HashMap[String,ActorRef]() //maps our hashes to the corresponding actor
+  val userIDMap = new HashMap[String,String]() //maps user ids to our hashes
 
   lazy val route = pingRoute ~ loginRoute ~ finishAuthorize ~ searchPage ~ startAuthorize ~ getPlaylists
 
@@ -51,15 +52,19 @@ trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
 
             println("found userID " + id)
 
-            val hash = Util.getBase36(6)
 
-            actorMap += hash -> actorRefFactory.actorOf(Props(new PlaylistActor(id, token)))
-
-            hash
+            if (userIDMap.contains(id)) {
+              println("user already exists, returning existing hash")
+              userIDMap(id)
+            } else {
+              val hash = Util.getBase36(6)
+              println("user doesn't exist, created hash " + hash)
+              actorMap += hash -> actorRefFactory.actorOf(Props(new PlaylistActor(id, token)))
+              userIDMap += id -> hash
+              hash
+            }
           }
         }
-
-        response.foreach(println(_))
 
         ctx.complete(response)
       }
