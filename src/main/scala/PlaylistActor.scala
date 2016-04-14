@@ -19,7 +19,11 @@ import spray.routing.RequestContext
 case class GetAllPlaylists(ctx: RequestContext)
 
 class PlaylistActor(userID: String, accessToken: String) extends Actor with SpotifyInterfaceImpl  {
+	var playlistID = "";
+
 	def receive = {
     case GetAllPlaylists(ctx) => ctx.complete(getAllPlaylists(accessToken, userID)) 
+    case (listID: PlaylistID) => playlistID = listID.id
+    	sender ! s"Playlist set to $playlistID"
   }
 }

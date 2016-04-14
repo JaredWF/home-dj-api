@@ -1,3 +1,6 @@
+var userHash;
+var domain;
+
 window.onload = function () {
   var url = window.location.href;
 
@@ -5,7 +8,7 @@ window.onload = function () {
   var code = url.slice(codeOffset);
 
   var domainOffset = url.lastIndexOf("/");
-  var domain = url.slice(0, domainOffset);
+  domain = url.slice(0, domainOffset);
 
   console.log("code = \n" + code);
   console.log("domain = " + domain);
@@ -20,6 +23,7 @@ function loginAndShowPlaylists(code, domain) {
       url: domain + "/finishAuthorize?code=" + code,  
       success: function(hash){
         console.log("hash = " + hash);
+        userHash = hash;
         var playlists = getPlaylists(hash, domain);
       },
       error: function(e){  
@@ -52,25 +56,55 @@ function displayPlaylists(json) {
 
 
   for(var i = 0; i < json.length; i++) {
-    var playlist = json[i];
-
-    var d = document.createElement('div');
-    $(d).addClass("playlistCard")
-    .appendTo($("#body"));
-
-    var thumbnail = document.createElement('img');
-    $(thumbnail).addClass("albumImage")
-    .attr('src', playlist.imageURL)
-    .appendTo(d);
-
-    var title = document.createElement('div');
-    $(title).addClass("playlistTitle")
-    .html(playlist.name)
-    .appendTo(d);
-
-    var songCount = document.createElement('div');
-    $(songCount).addClass("playlistLength")
-    .html(playlist.trackCount + " Songs")
-    .appendTo(d);
+    addPlaylistBlock(json[i]);
   }
+}
+
+function addPlaylistBlock(playlist) {
+  var id = playlist.id;
+
+  var d = document.createElement('div');
+  $(d).addClass("playlistCard")
+  .appendTo($("#body"));
+
+  var thumbnail = document.createElement('img');
+  $(thumbnail).addClass("albumImage")
+  .attr('src', playlist.imageURL)
+  .appendTo(d);
+
+  var title = document.createElement('div');
+  $(title).addClass("playlistTitle")
+  .html(playlist.name)
+  .appendTo(d);
+
+  var songCount = document.createElement('div');
+  $(songCount).addClass("playlistLength")
+  .html(playlist.trackCount + " Songs")
+  .appendTo(d);
+
+  d.addEventListener('click', function (e) {
+    console.log("chose playlist " + id);
+    selectPlaylist(id);
+  });
+}
+
+function selectPlaylist(playlistID) {
+  $.ajax({  
+    type: "POST",  
+    url: domain + "/" + userHash + "/choosePlaylist",  
+    data: JSON.stringify(
+        {id: playlistID}
+    ),
+    contentType: "application/json",
+    dataType   : "text",
+    success: function(response){  
+      console.log("playlist chosen");
+      console.log(response);
+    },
+    error: function(xhr, status, error){  
+      console.log(status);
+      console.log(xhr.responseText);
+      console.log(error);
+    }
+  });
 }

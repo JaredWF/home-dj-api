@@ -1,10 +1,9 @@
 .playlistCard {
-  width: 90%;
   display: inline-block;
-  margin: 4%;
   background-color: #B31B1B;
   text-align: center;
   border-radius: 6px;
+  cursor: pointer;
 }
 
 .albumImage {

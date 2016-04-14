@@ -15,6 +15,13 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext
 import ExecutionContext.Implicits.global
 import collection.mutable.HashMap
+import spray.routing.RequestContext
+import akka.pattern.ask
+import akka.util.Timeout
+import scala.concurrent.duration._
+import spray.httpx.marshalling._
+import spray.http._
+
 
 trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
 
@@ -23,7 +30,7 @@ trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
   val actorMap = new HashMap[String,ActorRef]() //maps our hashes to the corresponding actor
   val userIDMap = new HashMap[String,String]() //maps user ids to our hashes
 
-  lazy val route = pingRoute ~ loginRoute ~ finishAuthorize ~ searchPage ~ startAuthorize ~ getPlaylists
+  lazy val route = pingRoute ~ loginRoute ~ finishAuthorize ~ searchPage ~ startAuthorize ~ getPlaylists ~ choosePlaylist
 
   def pingRoute = path("ping" / Segment) { (s) =>
     get { 
@@ -88,6 +95,21 @@ trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
     case head::Nil => s + head.name + "\t" + head.trackCount + "\t" + head.id + "\t" + head.imageURL + "\n"
     case head::tail => stringFormatPlaylists(tail, s + head.name + "\t" + head.trackCount + "\t" + head.id + "\t" + head.imageURL + "\n")
     case _ => ""
+  }
+
+  def choosePlaylist = path(Segment / "choosePlaylist") { (actorHash) =>
+    post {
+      entity(as[PlaylistID]) { playlistID =>
+        if (actorMap.contains(actorHash)) {
+          implicit val timeout = Timeout(2 seconds)
+          println("choosing playlist " + playlistID.id)
+          complete((actorMap(actorHash) ? playlistID).mapTo[String])
+        } else {
+          println("failed to choose playlist " + playlistID.id)
+          complete(StatusCodes.BadRequest, "invalid user ID")
+        }
+      }
+    }
   }
 
   /*def addSongRoute = path("add") {
