@@ -49,6 +49,13 @@ function search() {
           var addButton = addColumn.appendChild(document.createElement("img"));
           addButton.src = "./AddButton.png";
           addButton.className = "add_button";
+
+
+          var url = window.location.href;
+          var domainOffset = url.lastIndexOf("/");
+          domain = url.slice(0, domainOffset);
+          hash = url.slice(domainOffset + 1);
+
           addButton.addEventListener('click', function (e) {
             this.removeEventListener('click', arguments.callee, false);
             this.src = "./CheckButton.png";
@@ -56,7 +63,7 @@ function search() {
             var uri = resultList[index].uri;
             $.ajax({  
               type: "POST",  
-              url: "http://home-dj.herokuapp.com/add",  
+              url: domain + "/add/" + hash,  
               data: JSON.stringify(
                   {id: uri}
               ),

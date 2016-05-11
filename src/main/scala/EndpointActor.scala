@@ -30,7 +30,8 @@ trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
   val actorMap = new HashMap[String,ActorRef]() //maps our hashes to the corresponding actor
   val userIDMap = new HashMap[String,String]() //maps user ids to our hashes
 
-  lazy val route = pingRoute ~ loginRoute ~ finishAuthorize ~ searchPage ~ startAuthorize ~ getPlaylists ~ choosePlaylist
+  lazy val route = pingRoute ~ loginRoute ~ finishAuthorize ~ searchPage ~ startAuthorize ~ getPlaylists ~ choosePlaylist ~ addRoute ~addSongRoute
+  implicit val timeout = Timeout(2 seconds)
 
   def pingRoute = path("ping" / Segment) { (s) =>
     get { 
@@ -101,7 +102,6 @@ trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
     post {
       entity(as[PlaylistID]) { playlistID =>
         if (actorMap.contains(actorHash)) {
-          implicit val timeout = Timeout(2 seconds)
           println("choosing playlist " + playlistID.id)
           complete((actorMap(actorHash) ? playlistID).mapTo[String])
         } else {
@@ -112,24 +112,19 @@ trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
     }
   }
 
-  /*def addSongRoute = path("add") {
+  def addSongRoute = path("add" / Segment) { (actorHash) =>
     post {
       entity(as[Song]) { song =>
-        if (accessToken == "" || userID == "" || playlistID == "") {
-          complete("Please login before adding songs")
-        } else {
-          val songID = song.id
-          complete( addSong(accessToken, userID, playlistID, songID) /*match {
-              case Future.successful(snapshotID) => snapshotID
-              case Future.failed(ex) => 
-                println(s"failed to add song $songID to playlist $playlistID for user $userID with token $accessToken")
-                "Failed to add song: \n" + ex
-            }*/
-          )
-        }
+        complete((actorMap(actorHash) ? song).mapTo[Future[String]])
       }
     }
-  }*/
+  }
+
+  def addRoute = path(Segment) { (s) =>
+    get { 
+      getFromResource("search.html")
+    }
+  }
 
   def searchPage = 
     get {

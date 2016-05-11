@@ -25,5 +25,18 @@ class PlaylistActor(userID: String, accessToken: String) extends Actor with Spot
     case GetAllPlaylists(ctx) => ctx.complete(getAllPlaylists(accessToken, userID)) 
     case (listID: PlaylistID) => playlistID = listID.id
     	sender ! s"Playlist set to $playlistID"
+    case (song: Song) => 
+      println("adding song: " + song)
+      if (accessToken == "" || userID == "" || playlistID == "") {
+        sender ! "Please login before adding songs"
+      } else {
+        val songID = song.id
+        sender ! addSong(accessToken, userID, playlistID, songID)
+        /*    case Future.successful(snapshotID) => snapshotID
+            case Future.failed(ex) => 
+              println(s"failed to add song $songID to playlist $playlistID for user $userID with token $accessToken")
+              "Failed to add song: \n" + ex
+          })*/
+      }
   }
 }

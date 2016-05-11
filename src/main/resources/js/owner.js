@@ -100,6 +100,7 @@ function selectPlaylist(playlistID) {
     success: function(response){  
       console.log("playlist chosen");
       console.log(response);
+      window.location.href = domain + "/" + userHash;
     },
     error: function(xhr, status, error){  
       console.log(status);

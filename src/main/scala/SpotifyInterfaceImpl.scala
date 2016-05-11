@@ -35,6 +35,7 @@ trait SpotifyInterfaceImpl extends SpotifyInterface {
   }
 
   def addSong(accessToken: String, userID: String, playlistID: String, songID: String): Future[String] = {   
+    println("in add song")
     flattenFutureTry(Future{Try(Unirest.post("https://api.spotify.com/v1/users/" + userID + "/playlists/" + playlistID + "/tracks?uris=" + songID)
       .header("Authorization", "Bearer " + accessToken)
       .header("Content-Type", "application/json")
@@ -70,7 +71,10 @@ trait SpotifyInterfaceImpl extends SpotifyInterface {
       }
   }
 
-  def extractSnapshotId(json: JSONObject): String = json.getString("snapshot_id")
+  def extractSnapshotId(json: JSONObject): String = {
+    println("extracting snapshot")
+    json.getString("snapshot_id")
+  }
 
   def flattenFutureTry[A](future: Future[Try[A]]): Future[A] = {
     future.flatMap {
