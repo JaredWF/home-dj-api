@@ -30,7 +30,7 @@ trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
   val actorMap = new HashMap[String,ActorRef]() //maps our hashes to the corresponding actor
   val userIDMap = new HashMap[String,String]() //maps user ids to our hashes
 
-  lazy val route = pingRoute ~ loginRoute ~ finishAuthorize ~ searchPage ~ startAuthorize ~ getPlaylists ~ choosePlaylist ~ addRoute ~addSongRoute
+  lazy val route = pingRoute ~ loginRoute ~ finishAuthorize ~ searchPage ~ startAuthorize ~ getPlaylists ~ choosePlaylist ~ addRoute ~ addSongRoute ~ playlistSongsRoute
   implicit val timeout = Timeout(2 seconds)
 
   def pingRoute = path("ping" / Segment) { (s) =>
@@ -112,10 +112,10 @@ trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
     }
   }
 
-  def addSongRoute = path("add" / Segment) { (actorHash) =>
+  def addSongRoute = path(Segment / "add") { (actorHash) =>
     post {
-      entity(as[Song]) { song =>
-        complete((actorMap(actorHash) ? song).mapTo[Future[String]])
+      entity(as[SongID]) { songID =>
+        complete((actorMap(actorHash) ? songID).mapTo[Future[String]])
       }
     }
   }
@@ -125,6 +125,13 @@ trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
       getFromResource("search.html")
     }
   }
+
+  def playlistSongsRoute = path(Segment / "getAllSongs") { (actorHash) =>
+    get {
+      complete((actorMap(actorHash) ? GetPlaylistSongs()).mapTo[List[Song]])
+    }
+  }
+
 
   def searchPage = 
     get {

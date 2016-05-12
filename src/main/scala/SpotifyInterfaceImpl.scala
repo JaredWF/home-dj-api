@@ -34,8 +34,7 @@ trait SpotifyInterfaceImpl extends SpotifyInterface {
       .asJson).map(json => extractFirstPlaylistID(json.getBody.getObject))})
   }
 
-  def addSong(accessToken: String, userID: String, playlistID: String, songID: String): Future[String] = {   
-    println("in add song")
+  def addSong(accessToken: String, userID: String, playlistID: String, songID: String): Future[String] = {  
     flattenFutureTry(Future{Try(Unirest.post("https://api.spotify.com/v1/users/" + userID + "/playlists/" + playlistID + "/tracks?uris=" + songID)
       .header("Authorization", "Bearer " + accessToken)
       .header("Content-Type", "application/json")
@@ -47,6 +46,20 @@ trait SpotifyInterfaceImpl extends SpotifyInterface {
       .header("Authorization", "Bearer " + accessToken)
       .asJson).map(json => extractAllPlaylists(json.getBody.getObject).filter(_.owner == userID))})
   }
+
+  def getPlaylistSongs(accessToken: String, userID: String, playlistID: String): Future[List[Song]] = {
+    flattenFutureTry(Future{Try(Unirest.get(s"https://api.spotify.com/v1/users/$userID/playlists/$playlistID/tracks")
+      .header("Authorization", "Bearer " + accessToken)
+      .asJson).map(json => extractSongList(json.getBody().getObject))})
+  }
+
+  def getSongFromID(songURI: String): Future[Song] = {
+    val idStart = songURI.lastIndexOf(':') + 1
+    val songID = songURI.slice(idStart, songURI.length)
+    flattenFutureTry(Future{Try(Unirest.get(s"https://api.spotify.com/v1/tracks/$songID")
+      .asJson).map(json => extractSongFromTrack(json.getBody().getObject))})
+  }
+
 
 	def extractAccessToken(json: JSONObject): String = json.getString("access_token")
 
@@ -66,14 +79,45 @@ trait SpotifyInterfaceImpl extends SpotifyInterface {
         jsonObject.getString("id"),
         jsonObject.getJSONObject("owner").getString("id"))
       buildPlaylistList(jsonArray, position + 1, newPlaylist::playlistList)
-      } else {
-        playlistList
-      }
+    } else {
+      playlistList
+    }
   }
 
   def extractSnapshotId(json: JSONObject): String = {
-    println("extracting snapshot")
     json.getString("snapshot_id")
+  }
+
+  def extractSongList(json: JSONObject): List[Song] = {
+    def buildSongList(jsonArray: JSONArray, position: Int, songList: List[Song]): List[Song] = {
+      if (position < jsonArray.length) {
+        val track = jsonArray.getJSONObject(position).getJSONObject("track")
+
+        buildSongList(jsonArray, position + 1, extractSongFromTrack(track)::songList)
+      } else {
+        songList
+      }
+    }
+
+    buildSongList(json.getJSONArray("items"), 0, List[Song]())
+  }
+
+  def extractSongFromTrack(track: JSONObject): Song = {
+    val imageArray = track.getJSONObject("album").getJSONArray("images")
+    val imageURL = imageArray.getJSONObject(imageArray.length - 1).getString("url")
+    val id = track.getString("id")
+    val name = track.getString("name")
+    val artistArray = track.getJSONArray("artists")
+    val collatedNames = buildArtistList(artistArray, 0, List[String]()).foldRight("")((name, list) => list + name + ", ") //folding right to maintain list order
+    Song(id, name, collatedNames.slice(0, collatedNames.length - 2), imageURL)
+  }
+
+  def buildArtistList(jsonArray: JSONArray, position: Int, artistList: List[String]): List[String] = {
+    if (position < jsonArray.length) {
+      buildArtistList(jsonArray, position + 1, jsonArray.getJSONObject(position).getString("name")::artistList)
+    } else {
+      artistList
+    }
   }
 
   def flattenFutureTry[A](future: Future[Try[A]]): Future[A] = {

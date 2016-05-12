@@ -17,26 +17,39 @@ import ExecutionContext.Implicits.global
 import spray.routing.RequestContext
 
 case class GetAllPlaylists(ctx: RequestContext)
+case class GetPlaylistSongs()
 
 class PlaylistActor(userID: String, accessToken: String) extends Actor with SpotifyInterfaceImpl  {
 	var playlistID = "";
+  var songs = List[Song]();
 
 	def receive = {
     case GetAllPlaylists(ctx) => ctx.complete(getAllPlaylists(accessToken, userID)) 
     case (listID: PlaylistID) => playlistID = listID.id
-    	sender ! s"Playlist set to $playlistID"
-    case (song: Song) => 
-      println("adding song: " + song)
-      if (accessToken == "" || userID == "" || playlistID == "") {
-        sender ! "Please login before adding songs"
-      } else {
-        val songID = song.id
-        sender ! addSong(accessToken, userID, playlistID, songID)
-        /*    case Future.successful(snapshotID) => snapshotID
-            case Future.failed(ex) => 
-              println(s"failed to add song $songID to playlist $playlistID for user $userID with token $accessToken")
-              "Failed to add song: \n" + ex
-          })*/
+      getPlaylistSongs(accessToken, userID, playlistID).onComplete {
+        case Success(discoveredSongs) => songs = discoveredSongs
+        case Failure(t) => println("failed to get songs\n" + t)
       }
+    	sender ! s"Playlist set to $playlistID"
+    case (song: SongID) => 
+      val songURI = song.id
+      val idStart = songURI.lastIndexOf(':') + 1
+      val songID = songURI.slice(idStart, songURI.length)
+
+      val filteredSongs = songs.filter(s => s.id == songID)
+      if (accessToken == "" || userID == "" || playlistID == "") {
+        sender ! Future("Please login before adding songs")
+      } else if (filteredSongs.length > 0) {
+        sender ! Future("Song already in playlist")
+      } else {
+        sender ! addSong(accessToken, userID, playlistID, songURI)
+        getSongFromID(songURI).onComplete {
+          case Success(discoveredSong) => songs = discoveredSong::songs
+          case Failure(t) => println("failed to get song\n" + t)
+        }
+      }
+    case (request: GetPlaylistSongs) => 
+      println("returning all songs")
+      sender ! songs
   }
 }

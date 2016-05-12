@@ -2,12 +2,17 @@ package org.eclectek.dj
 
 import spray.json.DefaultJsonProtocol
 
-case class Song(id: String)
+case class SongID(id: String)
+case class Song(id: String, name: String, artist: String, imageURL: String)
 case class Playlist(name: String, trackCount: Int, imageURL: String, id: String, owner: String)
 case class PlaylistID(id: String)
 
 object Song extends DefaultJsonProtocol {
-  implicit val stuffFormat = jsonFormat1(Song.apply)
+	implicit val songFormat = jsonFormat4(Song.apply)
+}
+
+object SongID extends DefaultJsonProtocol {
+  implicit val stuffFormat = jsonFormat1(SongID.apply)
 }
 
 object Playlist extends DefaultJsonProtocol {

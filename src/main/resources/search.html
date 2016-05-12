@@ -13,9 +13,15 @@
         <table>
             <tr>
                 <div id="parent">
+                  <div class="tab" id="selected_tab" onclick="tabClick(0);">Playlist</div>
+                  <div class="tab" onclick="tabClick(1);">Search</div>
+                </div>
+            </tr>
+            <tr>
+                <div id="parent">
                   <input type="text" id="search_text" placeholder="Search"/>
                   <img src="SearchButton.png" id="search_button"/>
-                </div>
+              </div>
             </tr>
         </table>
     </div>
