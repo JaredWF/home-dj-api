@@ -11,5 +11,5 @@ trait SpotifyInterface {
 	def addSong(accessToken: String, userID: String, playlistID: String, songID: String): Future[String]
 	def getAllPlaylists(accessToken: String, userID: String): Future[List[Playlist]]
 	def getPlaylistSongs(accessToken: String, userID: String, playlistID: String): Future[List[Song]]
-	def getSongFromID(songID: String): Future[Song]
+	def getSongFromID(songId: String): Future[Song]
 }

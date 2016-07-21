@@ -53,10 +53,8 @@ trait SpotifyInterfaceImpl extends SpotifyInterface {
       .asJson).map(json => extractSongList(json.getBody().getObject))})
   }
 
-  def getSongFromID(songURI: String): Future[Song] = {
-    val idStart = songURI.lastIndexOf(':') + 1
-    val songID = songURI.slice(idStart, songURI.length)
-    flattenFutureTry(Future{Try(Unirest.get(s"https://api.spotify.com/v1/tracks/$songID")
+  def getSongFromID(songId: String): Future[Song] = {
+    flattenFutureTry(Future{Try(Unirest.get(s"https://api.spotify.com/v1/tracks/$songId")
       .asJson).map(json => extractSongFromTrack(json.getBody().getObject))})
   }
 

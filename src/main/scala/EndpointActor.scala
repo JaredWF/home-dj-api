@@ -30,7 +30,13 @@ trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
   val actorMap = new HashMap[String,ActorRef]() //maps our hashes to the corresponding actor
   val userIDMap = new HashMap[String,String]() //maps user ids to our hashes
 
-  lazy val route = pingRoute ~ loginRoute ~ finishAuthorize ~ searchPage ~ startAuthorize ~ getPlaylists ~ choosePlaylist ~ addRoute ~ addSongRoute ~ playlistSongsRoute
+  lazy val route = pingRoute ~ loginRoute ~ finishAuthorize ~
+    pathPrefix(Segment) { hash:String => ctx:RequestContext =>
+      if (actorMap.contains(hash)) {
+        actorMap(hash) ! ctx
+      }
+    }
+  
   implicit val timeout = Timeout(2 seconds)
 
   def pingRoute = path("ping" / Segment) { (s) =>
@@ -47,10 +53,9 @@ trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
     }
   }
 
-  def finishAuthorize = path("finishAuthorize") {
+  def finishAuthorize = (get & path("finishAuthorize")) {
     parameters('code) { (code) =>
-      get { ctx =>
-
+      detach() {
         println("Attepmting to authorize code " + code)
 
         val response = getAccessToken(code).flatMap { (token) =>
@@ -74,21 +79,8 @@ trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
           }
         }
 
-        ctx.complete(response)
+        complete(response)
       }
-    }
-  }
-
-  def getPlaylists = path("getPlaylists" / Segment) { (actorHash) =>
-    get { ctx =>
-      actorMap(actorHash) ! GetAllPlaylists(ctx)
-    }
-  }
-
-  def startAuthorize = path("startAuthorize") {
-    get {
-      println("serving admin page")
-      getFromResource("choosePlaylist.html")
     }
   }
 
@@ -97,47 +89,4 @@ trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
     case head::tail => stringFormatPlaylists(tail, s + head.name + "\t" + head.trackCount + "\t" + head.id + "\t" + head.imageURL + "\n")
     case _ => ""
   }
-
-  def choosePlaylist = path(Segment / "choosePlaylist") { (actorHash) =>
-    post {
-      entity(as[PlaylistID]) { playlistID =>
-        if (actorMap.contains(actorHash)) {
-          println("choosing playlist " + playlistID.id)
-          complete((actorMap(actorHash) ? playlistID).mapTo[String])
-        } else {
-          println("failed to choose playlist " + playlistID.id)
-          complete(StatusCodes.BadRequest, "invalid user ID")
-        }
-      }
-    }
-  }
-
-  def addSongRoute = path(Segment / "add") { (actorHash) =>
-    post {
-      entity(as[SongID]) { songID =>
-        complete((actorMap(actorHash) ? songID).mapTo[Future[String]])
-      }
-    }
-  }
-
-  def addRoute = path(Segment) { (s) =>
-    get { 
-      getFromResource("search.html")
-    }
-  }
-
-  def playlistSongsRoute = path(Segment / "getAllSongs") { (actorHash) =>
-    get {
-      complete((actorMap(actorHash) ? GetPlaylistSongs()).mapTo[List[Song]])
-    }
-  }
-
-
-  def searchPage = 
-    get {
-      compressResponse()(getFromResourceDirectory("")) ~
-      path("") {
-        getFromResource("index.html")
-      }
-    }
 }
