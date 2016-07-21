@@ -30,12 +30,14 @@ trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
   val actorMap = new HashMap[String,ActorRef]() //maps our hashes to the corresponding actor
   val userIDMap = new HashMap[String,String]() //maps user ids to our hashes
 
-  lazy val route = pingRoute ~ loginRoute ~ finishAuthorize ~
-    pathPrefix(Segment) { hash:String => ctx:RequestContext =>
-      if (actorMap.contains(hash)) {
-        actorMap(hash) ! ctx
-      } else {
-        ctx.complete(StatusCodes.BadRequest, "Invalid hash")
+  lazy val route = respondWithHeader(RawHeader("Access-Control-Allow-Origin", "home-dj.herokuapp.com")) {
+      pingRoute ~ loginRoute ~ finishAuthorize ~
+      pathPrefix(Segment) { hash:String => ctx:RequestContext =>
+        if (actorMap.contains(hash)) {
+          actorMap(hash) ! ctx
+        } else {
+          ctx.complete(StatusCodes.BadRequest, "Invalid hash")
+        }
       }
     }
   
