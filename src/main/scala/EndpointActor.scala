@@ -34,6 +34,8 @@ trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
     pathPrefix(Segment) { hash:String => ctx:RequestContext =>
       if (actorMap.contains(hash)) {
         actorMap(hash) ! ctx
+      } else {
+        ctx.complete(StatusCodes.BadRequest, "Invalid hash")
       }
     }
   
@@ -58,10 +60,10 @@ trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
       detach() {
         println("Attepmting to authorize code " + code)
 
-        val response = getAccessToken(code).flatMap { (token) =>
-          println("found access token " + token)
+        val response = getAccessTokens(code).flatMap { (tokens) =>
+          println("found access token " + tokens._1)
 
-          getUserID(token).map { (id) =>
+          getUserID(tokens._1).map { (id) =>
 
             println("found userID " + id)
 
@@ -72,7 +74,7 @@ trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
             } else {
               val hash = Util.getBase36(6)
               println("user doesn't exist, created hash " + hash)
-              actorMap += hash -> actorRefFactory.actorOf(Props(new PlaylistActor(id, token)))
+              actorMap += hash -> actorRefFactory.actorOf(Props(new PlaylistActor(id, tokens._1, tokens._2)))
               userIDMap += id -> hash
               hash
             }

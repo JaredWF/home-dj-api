@@ -1,6 +1,7 @@
 package org.eclectek.dj
 
 import akka.actor._
+import scala.concurrent.duration._
 import spray.routing.HttpService
 import spray.http.HttpHeaders._
 import spray.http.ContentTypes._
@@ -18,13 +19,31 @@ import spray.routing.RequestContext
 case class GetAllPlaylists(ctx: RequestContext)
 case class GetPlaylistSongs()
 
-class PlaylistActor(userID: String, accessToken: String) extends HttpService with Actor with SpotifyInterfaceImpl  {
+class PlaylistActor(userID: String, var accessToken: String, refreshToken: String) extends HttpService with Actor with SpotifyInterfaceImpl  {
   import context.dispatcher
 
   def actorRefFactory = context
 
 	var playlistID = "";
   var songs = List[Song]();
+
+  //reload our cached song list
+  context.system.scheduler.schedule(60 seconds, 60 seconds){
+    if (accessToken != "" && userID != "" && playlistID != "" && refreshToken != "") {
+      getPlaylistSongs(accessToken, userID, playlistID).foreach { discoveredSongs => 
+        songs = discoveredSongs
+      }
+    }
+  }
+  //refresh the access token
+  context.system.scheduler.schedule(30 minutes, 30 minutes){
+    if (refreshToken != "") {
+      println(s"refreshing token for user $userID")
+      getTokenFromRefresh(refreshToken).foreach { token =>
+        accessToken = token
+      }
+    }
+  }
 
 	def receive = runRoute{
     (post & path("choosePlaylist")) {

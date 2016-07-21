@@ -11,13 +11,23 @@ import ExecutionContext.Implicits.global
 trait SpotifyInterfaceImpl extends SpotifyInterface {
   val redirectURI = System.getenv("redirect_uri")
 
-	def getAccessToken(accessCode: String): Future[String] = {
+	def getAccessTokens(accessCode: String): Future[(String, String)] = {
     flattenFutureTry(Future{
       Try(Unirest.post("https://accounts.spotify.com/api/token")
       .header("Authorization", "Basic " + System.getenv("hashed_secret"))
       .field("grant_type", "authorization_code")
       .field("code", accessCode)
       .field("redirect_uri", redirectURI)
+      .asJson).map(json => extractAccessTokens(json.getBody.getObject))
+    })
+  }
+
+  def getTokenFromRefresh(refreshToken: String): Future[String] = {
+    flattenFutureTry(Future{
+      Try(Unirest.post("https://accounts.spotify.com/api/token")
+      .header("Authorization", "Basic " + System.getenv("hashed_secret"))
+      .field("grant_type", "refresh_token")
+      .field("refresh_token", refreshToken)
       .asJson).map(json => extractAccessToken(json.getBody.getObject))
     })
   }
@@ -59,7 +69,9 @@ trait SpotifyInterfaceImpl extends SpotifyInterface {
   }
 
 
-	def extractAccessToken(json: JSONObject): String = json.getString("access_token")
+	def extractAccessTokens(json: JSONObject): (String, String) = (json.getString("access_token"), json.getString("refresh_token"))
+
+  def extractAccessToken(json: JSONObject): String = json.getString("access_token")
 
   def extractUserID(json: JSONObject): String = json.getString("id")
 
