@@ -55,7 +55,7 @@ trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
     }
   }
 
-  def finishAuthorize = (get & path("finishAuthorize")) {
+  def finishAuthorize = (get & path("finish-authorize")) {
     parameters('code) { (code) =>
       detach() {
         println("Attepmting to authorize code " + code)

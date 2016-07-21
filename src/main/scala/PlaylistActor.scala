@@ -46,7 +46,7 @@ class PlaylistActor(userID: String, var accessToken: String, refreshToken: Strin
   }
 
 	def receive = runRoute{
-    (post & path("choosePlaylist")) {
+    (post & path("choose-playlist")) {
       entity(as[PlaylistID]) { p =>
         println("choosing playlist " + p.id)
         val songsFuture = getPlaylistSongs(accessToken, userID, p.id)
@@ -82,10 +82,10 @@ class PlaylistActor(userID: String, var accessToken: String, refreshToken: Strin
     (get & path("")) {
       getFromResource("search.html")
     } ~ 
-    (get & path("getAllSongs")) {
+    (get & path("get-all-songs")) {
       complete(songs)
     } ~
-    (get & path("getPlaylists")) {
+    (get & path("get-playlists")) {
       complete(getAllPlaylists(accessToken, userID))
     }
   }
