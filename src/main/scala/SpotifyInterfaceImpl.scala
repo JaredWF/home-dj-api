@@ -58,9 +58,15 @@ trait SpotifyInterfaceImpl extends SpotifyInterface {
   }
 
   def getPlaylistSongs(accessToken: String, userID: String, playlistID: String): Future[List[Song]] = {
-    flattenFutureTry(Future{Try(Unirest.get(s"https://api.spotify.com/v1/users/$userID/playlists/$playlistID/tracks")
+    flattenFutureTry(Future{Try(Unirest.get(s"https://api.spotify.com/v1/users/$userID/playlists/$playlistID/tracks?fields=items(track(album(images),id,name,artists))")
       .header("Authorization", "Bearer " + accessToken)
       .asJson).map(json => extractSongList(json.getBody().getObject))})
+  }
+
+  def getPlaylistName(accessToken: String, userID: String, playlistID: String): Future[String] = {
+    flattenFutureTry(Future{Try(Unirest.get(s"https://api.spotify.com/v1/users/$userID/playlists/$playlistID?fields=name")
+      .header("Authorization", "Bearer " + accessToken)
+      .asJson).map(json => json.getBody.getObject.getString("name"))})
   }
 
   def getSongFromID(songId: String): Future[Song] = {

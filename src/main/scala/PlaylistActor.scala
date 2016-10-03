@@ -56,7 +56,7 @@ class PlaylistActor(userID: String, var accessToken: String, refreshToken: Strin
           playlistID = p.id
         }
 
-        complete(songsFuture.map(songList => s"Playlist set to ${p.id}"))
+        complete(songsFuture.map(songList => s"""{\"playlistId\": \"${p.id}\"}"""))
       }
     } ~ 
     (post & path("add")) {
@@ -87,6 +87,9 @@ class PlaylistActor(userID: String, var accessToken: String, refreshToken: Strin
     } ~
     (get & path("get-playlists")) {
       complete(getAllPlaylists(accessToken, userID))
+    } ~
+    (get & path("get-playlist-name")) {
+      complete(getPlaylistName(accessToken, userID, playlistID))
     }
   }
 }

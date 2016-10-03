@@ -21,6 +21,7 @@ import akka.util.Timeout
 import scala.concurrent.duration._
 import spray.httpx.marshalling._
 import spray.http._
+import spray.http.HttpMethods._
 
 
 trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
@@ -30,8 +31,16 @@ trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
   val actorMap = new HashMap[String,ActorRef]() //maps our hashes to the corresponding actor
   val userIDMap = new HashMap[String,String]() //maps user ids to our hashes
 
-  lazy val route = respondWithHeader(RawHeader("Access-Control-Allow-Origin", "home-dj.herokuapp.com")) {
-      pingRoute ~ loginRoute ~ finishAuthorize ~
+  val corsHeaders = List(`Access-Control-Allow-Origin`(AllOrigins),
+    `Access-Control-Allow-Methods`(GET, POST, OPTIONS, DELETE),
+    `Access-Control-Allow-Headers`("Origin, X-Requested-With, Content-Type, Accept, Accept-Encoding, Accept-Language, Host, Referer, User-Agent"))
+
+  lazy val route = respondWithHeaders(corsHeaders) {
+      options {
+        complete {
+          StatusCodes.OK
+        }
+      } ~ pingRoute ~ loginRoute ~ finishAuthorize ~
       pathPrefix(Segment) { hash:String => ctx:RequestContext =>
         if (actorMap.contains(hash)) {
           actorMap(hash) ! ctx
