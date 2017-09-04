@@ -16,7 +16,6 @@ libraryDependencies ++= Seq(
   "io.spray" %%  "spray-json" % "1.3.2",
   "com.mashape.unirest" % "unirest-java" % "1.4.7",
 	"com.typesafe.akka" % "akka-actor_2.10" % "2.2.4",
-	"net.databinder.dispatch" %% "dispatch-core" % "0.11.2",
 	"org.specs2" % "specs2_2.10" % "2.3.10",
 	"io.spray" % "spray-testkit_2.10" % "1.3.3"
 )

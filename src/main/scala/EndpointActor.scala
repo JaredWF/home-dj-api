@@ -11,20 +11,50 @@ import spray.httpx.SprayJsonSupport._
 import spray.http.MediaTypes
 import scala.util.Success
 import scala.util.Failure
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext
+import ExecutionContext.Implicits.global
+import collection.mutable.HashMap
+import spray.routing.RequestContext
+import akka.pattern.ask
+import akka.util.Timeout
+import scala.concurrent.duration._
+import spray.httpx.marshalling._
+import spray.http._
+import spray.http.HttpMethods._
+
 
 trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
 
   val loginRedirect = "https://accounts.spotify.com/authorize?client_id=" + System.getenv("client_id") + "&response_type=code&redirect_uri=" + System.getenv("redirect_uri") + "&scope=playlist-modify-public"
 
-  var accessToken = ""
-  var userID = ""
-  var playlistID = ""
+  val actorMap = new HashMap[String,ActorRef]() //maps our hashes to the corresponding actor
+  val userIDMap = new HashMap[String,String]() //maps user ids to our hashes
 
-  lazy val route = pingRoute ~ loginRoute ~ finishAuthorize ~ addSongRoute ~ searchPage
+  val corsHeaders = List(`Access-Control-Allow-Origin`(AllOrigins),
+    `Access-Control-Allow-Methods`(GET, POST, OPTIONS, DELETE),
+    `Access-Control-Allow-Headers`("Origin, X-Requested-With, Content-Type, Accept, Accept-Encoding, Accept-Language, Host, Referer, User-Agent"))
 
-  def pingRoute = path("ping") {
+  lazy val route = respondWithHeaders(corsHeaders) {
+      options {
+        complete {
+          StatusCodes.OK
+        }
+      } ~ pingRoute ~ loginRoute ~ finishAuthorize ~
+      pathPrefix(Segment) { hash:String => ctx:RequestContext =>
+        if (actorMap.contains(hash)) {
+          actorMap(hash) ! ctx
+        } else {
+          ctx.complete(StatusCodes.BadRequest, "Invalid hash")
+        }
+      }
+    }
+  
+  implicit val timeout = Timeout(2 seconds)
+
+  def pingRoute = path("ping" / Segment) { (s) =>
     get { 
-      complete("pong!") 
+      complete("pong! " + s) 
     }
   }
 
@@ -36,63 +66,40 @@ trait EndpointActor extends HttpService with SpotifyInterfaceImpl  {
     }
   }
 
-  def finishAuthorize = path("finishAuthorize") {
+  def finishAuthorize = (get & path("finish-authorize")) {
     parameters('code) { (code) =>
-      get {
+      detach() {
+        println("Attepmting to authorize code " + code)
 
-        getAccessToken(code) match {
-          case Success(token) => 
-            accessToken = token
+        val response = getAccessTokens(code).flatMap { (tokens) =>
+          println("found access token " + tokens._1)
 
-            getUserID(accessToken) match {
-              case Success(id) => 
-                userID = id
+          getUserID(tokens._1).map { (id) =>
 
-                getPlaylistID(accessToken) match {
-                  case Success(playlist) => 
-                    playlistID = playlist
-                    println(s"logged in $userID")
-                    complete(s"Login successful\n\nuserID: $userID \ntoken: $accessToken \nplaylistID: $playlistID")
-                  case Failure(playlistEx) => 
-                    println(s"playlist retrieval failed for user $userID and code $code and token $accessToken")
-                    complete("Error getting first playlist: \n" + playlistEx)
-                }
-              case Failure(userEx) => 
-                println(s"userID retrieval failed for code $code and token $accessToken")
-                complete("Error getting user id: \n" + userEx)
+            println("found userID " + id)
+
+
+            if (userIDMap.contains(id)) {
+              println("user already exists, returning existing hash")
+              userIDMap(id)
+            } else {
+              val hash = Util.getBase36(6)
+              println("user doesn't exist, created hash " + hash)
+              actorMap += hash -> actorRefFactory.actorOf(Props(new PlaylistActor(id, tokens._1, tokens._2)))
+              userIDMap += id -> hash
+              hash
             }
-          case Failure(tokenEx) => 
-            println(s"token retrieval failed for code $code\n" + tokenEx)
-            complete("Error getting token: \n" + tokenEx)
-        }
-
-      }
-    }
-  }
-
-  def addSongRoute = path("add") {
-    post {
-      entity(as[Song]) { song =>
-        if (accessToken == "" || userID == "" || playlistID == "") {
-          complete("Please login before adding songs")
-        } else {
-          val songID = song.id
-          addSong(accessToken, userID, playlistID, songID) match {
-            case Success(snapshotID) => complete(snapshotID)
-            case Failure(ex) => 
-              println(s"failed to add song $songID to playlist $playlistID for user $userID with token $accessToken")
-              complete("Failed to add song: \n" + ex)
           }
         }
+
+        complete(response)
       }
     }
   }
 
-  def searchPage = 
-    get {
-      compressResponse()(getFromResourceDirectory("")) ~
-      path("") {
-        getFromResource("index.html")
-      }
-    }
+  def stringFormatPlaylists(playlists: List[Playlist], s: String): String = playlists match{
+    case head::Nil => s + head.name + "\t" + head.trackCount + "\t" + head.id + "\t" + head.imageURL + "\n"
+    case head::tail => stringFormatPlaylists(tail, s + head.name + "\t" + head.trackCount + "\t" + head.id + "\t" + head.imageURL + "\n")
+    case _ => ""
+  }
 }
